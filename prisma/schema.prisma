@@ -1,0 +1,83 @@
+// SmartHR – Employee Management & Leave Tracking System
+// MCA Semester 3 Project – Kurukshetra University
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   // ADMIN | HR | EMPLOYEE
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  employee     Employee?
+  reviewedLeaves LeaveRequest[] @relation("LeaveReviewer")
+}
+
+model Department {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  employees   Employee[]
+}
+
+model Employee {
+  id           String     @id @default(cuid())
+  empCode      String     @unique
+  firstName    String
+  lastName     String
+  email        String     @unique
+  phone        String?
+  designation  String
+  salary       Float
+  hireDate     DateTime
+  status       String     @default("ACTIVE") // ACTIVE | INACTIVE
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  userId       String?    @unique
+  user         User?      @relation(fields: [userId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  leaveRequests LeaveRequest[]
+  attendances  Attendance[]
+}
+
+model LeaveRequest {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  leaveType    String    // CASUAL | SICK | EARNED | UNPAID
+  startDate    DateTime
+  endDate      DateTime
+  reason       String
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedById String?
+  reviewer     User?     @relation("LeaveReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Attendance {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  date       DateTime
+  checkIn    String?
+  checkOut   String?
+  status     String   @default("PRESENT") // PRESENT | ABSENT | HALF_DAY | ON_LEAVE
+  createdAt  DateTime @default(now())
+
+  @@unique([employeeId, date])
+}
